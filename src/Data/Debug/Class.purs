@@ -13,9 +13,11 @@ import Prelude
 import Data.Array as Array
 import Data.Bifunctor (bimap)
 import Data.Date (Date, day, month, year)
+import Data.Debug.Type (Repr)
 import Data.Debug.Type as D
 import Data.Either (Either(..))
 import Data.Enum (fromEnum)
+import Data.Functor.Mu (Mu(..))
 import Data.HashMap (HashMap)
 import Data.HashMap as HashMap
 import Data.HashSet (HashSet)
@@ -184,3 +186,6 @@ instance debugRepr :: Debug D.Repr where
 
 instance debugReprDelta :: Debug D.ReprDelta where
   debug _ = D.opaque_ "ReprDelta"
+
+instance debugMu :: (Functor f, Debug (f Repr)) => Debug (Mu f) where
+  debug (In inside) = debug $ debug <$> inside
