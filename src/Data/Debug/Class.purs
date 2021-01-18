@@ -6,6 +6,7 @@ module Data.Debug.Class
   , diff
   , class DebugRowList
   , debugRowList
+  , TacitRepr
   ) where
 
 import Prelude
@@ -187,5 +188,10 @@ instance debugRepr :: Debug D.Repr where
 instance debugReprDelta :: Debug D.ReprDelta where
   debug _ = D.opaque_ "ReprDelta"
 
-instance debugMu :: (Functor f, Debug (f Repr)) => Debug (Mu f) where
-  debug (In inside) = debug $ debug <$> inside
+newtype TacitRepr = TacitRepr Repr
+
+instance debugTacitRepr :: Debug TacitRepr where
+  debug (TacitRepr inside) = inside
+
+instance debugMu :: (Functor f, Debug (f TacitRepr)) => Debug (Mu f) where
+  debug (In inside) = debug $ inside <#> debug <#> TacitRepr
