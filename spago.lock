@@ -5,6 +5,7 @@ workspace:
       dependencies:
         - arrays
         - bifunctors
+        - colors
         - console
         - datetime
         - effect
@@ -26,6 +27,7 @@ workspace:
       build_plan:
         - arrays
         - bifunctors
+        - colors
         - console
         - const
         - contravariant
@@ -580,6 +582,17 @@ packages:
       - newtype
       - prelude
       - tuples
+  colors:
+    type: registry
+    version: 7.0.1
+    integrity: sha256-udlg/y2PFsHYli8Tgz8BQGGrOjyGo0BcJj36IfgYADs=
+    dependencies:
+      - arrays
+      - integers
+      - lists
+      - numbers
+      - partial
+      - strings
   console:
     type: registry
     version: 6.1.0

@@ -19,6 +19,7 @@ package:
   - strings
   - tuples
   - unordered-collections
+  - colors
   name: debugged
 workspace:
   package_set:

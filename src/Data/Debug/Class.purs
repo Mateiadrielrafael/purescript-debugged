@@ -11,7 +11,7 @@ module Data.Debug.Class
 
 import Prelude
 
-import Type.Proxy (Proxy(..))
+import Color (Color, toHexString)
 import Data.Array as Array
 import Data.Bifunctor (bimap)
 import Data.Date (Date, day, month, year)
@@ -40,6 +40,7 @@ import Effect (Effect)
 import Prim.Row as Row
 import Prim.RowList (class RowToList, Cons, Nil, RowList)
 import Record (get, delete)
+import Type.Proxy (Proxy(..))
 
 -- | Ideally, all types of kind `Type` should have an instance of this class.
 -- | If you are defining a type where it's difficult/impossible to do anything
@@ -201,3 +202,6 @@ instance debugTacitRepr :: Debug TacitRepr where
 
 instance debugMu :: (Functor f, Debug (f TacitRepr)) => Debug (Mu f) where
   debug (In inside) = debug $ inside <#> debug <#> TacitRepr
+
+instance Debug Color where
+  debug color = D.constructor "Color" [ debug (toHexString color) ]
