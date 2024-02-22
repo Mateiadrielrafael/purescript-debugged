@@ -52,6 +52,7 @@ import Data.Tuple (Tuple(..))
 -- | A strict rose tree type. Based on Data.Tree in Haskell's `containers`.
 data Tree a = Node a (Array (Tree a))
 
+{-
 rootLabel :: forall a. Tree a -> a
 rootLabel (Node r _) = r
 
@@ -61,6 +62,7 @@ subtrees (Node _ xs) = xs
 isLeaf :: forall a. Tree a -> Boolean
 isLeaf (Node _ []) = true
 isLeaf _ = false
+-}
 
 derive instance eqTree :: Eq a => Eq (Tree a)
 derive instance ordTree :: Ord a => Ord (Tree a)
