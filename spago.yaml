@@ -1,0 +1,26 @@
+package:
+  dependencies:
+  - arrays
+  - bifunctors
+  - console
+  - datetime
+  - effect
+  - either
+  - enums
+  - fixed-points
+  - foldable-traversable
+  - lists
+  - maybe
+  - newtype
+  - ordered-collections
+  - partial
+  - prelude
+  - record
+  - strings
+  - tuples
+  - unordered-collections
+  name: debugged
+workspace:
+  package_set:
+    registry: 50.1.0
+  extra_packages: {}

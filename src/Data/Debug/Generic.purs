@@ -22,16 +22,19 @@ module Data.Debug.Generic
 
 import Prelude
 
+import Type.Proxy (Proxy(..))
 import Data.Debug.Class (class Debug, debug)
 import Data.Debug.Type as D
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), NoConstructors, Product(..), Sum(..), from)
-import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
+import Data.Symbol (class IsSymbol, reflectSymbol)
 
 -- | A generic implementation of the `Debug` type class.
-genericDebug :: forall a rep.
-  Generic a rep =>
-  GenericDebug rep =>
-  a -> D.Repr
+genericDebug
+  :: forall a rep
+   . Generic a rep
+  => GenericDebug rep
+  => a
+  -> D.Repr
 genericDebug = genericDebug' <<< from
 
 -- | This class is part of the machinery for deriving `Debug` instances; it is
@@ -42,11 +45,10 @@ class GenericDebug rep where
 instance genericDebugNoConstructors :: GenericDebug NoConstructors where
   genericDebug' x = genericDebug' x
 
-instance genericDebugConstructor
-  :: (GenericDebugArgs a, IsSymbol name) => GenericDebug (Constructor name a) where
+instance genericDebugConstructor :: (GenericDebugArgs a, IsSymbol name) => GenericDebug (Constructor name a) where
   genericDebug' (Constructor a) =
     D.constructor
-      (reflectSymbol (SProxy :: SProxy name))
+      (reflectSymbol (Proxy :: Proxy name))
       (genericDebugArgs a)
 
 instance genericDebugSum :: (GenericDebug a, GenericDebug b) => GenericDebug (Sum a b) where
@@ -59,7 +61,7 @@ class GenericDebugArgs rep where
   genericDebugArgs :: rep -> Array D.Repr
 
 instance genericDebugArgsArgument :: Debug a => GenericDebugArgs (Argument a) where
-  genericDebugArgs (Argument a) = [debug a]
+  genericDebugArgs (Argument a) = [ debug a ]
 
 instance genericDebugArgsProduct :: (GenericDebugArgs a, GenericDebugArgs b) => GenericDebugArgs (Product a b) where
   genericDebugArgs (Product a b) = genericDebugArgs a <> genericDebugArgs b

@@ -11,6 +11,7 @@ module Data.Debug.Class
 
 import Prelude
 
+import Type.Proxy (Proxy(..))
 import Data.Array as Array
 import Data.Bifunctor (bimap)
 import Data.Date (Date, day, month, year)
@@ -33,13 +34,12 @@ import Data.Monoid (power)
 import Data.Set (Set)
 import Data.Set as Set
 import Data.String as String
-import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
+import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Prim.Row as Row
 import Prim.RowList (class RowToList, Cons, Nil, RowList)
 import Record (get, delete)
-import Type.Data.RowList (RLProxy(..))
 
 -- | Ideally, all types of kind `Type` should have an instance of this class.
 -- | If you are defining a type where it's difficult/impossible to do anything
@@ -92,7 +92,7 @@ instance debugFunction :: Debug (a -> b) where
 -- | it is not intended to be used directly.
 class DebugRowList :: RowList Type -> Row Type -> Constraint
 class DebugRowList list row | list -> row where
-  debugRowList :: RLProxy list -> Record row -> List (Tuple String D.Repr)
+  debugRowList :: Proxy list -> Record row -> List (Tuple String D.Repr)
 
 instance debugRowListNil :: DebugRowList Nil () where
   debugRowList _ _ = Nil
@@ -100,26 +100,28 @@ instance debugRowListNil :: DebugRowList Nil () where
 instance debugRowListCons ::
   ( Debug a
   , DebugRowList listRest rowRest
-  , Row.Cons  key a rowRest rowFull
+  , Row.Cons key a rowRest rowFull
   , Row.Lacks key rowRest
   , RowToList rowFull (Cons key a listRest)
   , IsSymbol key
-  ) => DebugRowList (Cons key a listRest) rowFull where
+  ) =>
+  DebugRowList (Cons key a listRest) rowFull where
   debugRowList _ rec =
     Tuple (reflectSymbol key) (debug val) : rest
     where
-    key = SProxy :: SProxy key
+    key = Proxy :: Proxy key
     val = get key rec
-    rest = debugRowList (RLProxy :: RLProxy listRest) (delete key rec)
+    rest = debugRowList (Proxy :: Proxy listRest) (delete key rec)
 
 instance debugRecord ::
   ( RowToList row list
   , DebugRowList list row
-  ) => Debug (Record row) where
+  ) =>
+  Debug (Record row) where
   debug r =
     D.record (Array.fromFoldable (debugRowList prx r))
     where
-    prx = RLProxy :: RLProxy list
+    prx = Proxy :: Proxy list
 
 -------------------------------------------------------------------------------
 -- Prelude
@@ -139,15 +141,15 @@ instance debugVoid :: Debug Void where
 -- Core
 
 instance debugMaybe :: Debug a => Debug (Maybe a) where
-  debug (Just x) = D.constructor "Just" [debug x]
+  debug (Just x) = D.constructor "Just" [ debug x ]
   debug Nothing = D.constructor "Nothing" []
 
 instance debugEither :: (Debug a, Debug b) => Debug (Either a b) where
-  debug (Right x) = D.constructor "Right" [debug x]
-  debug (Left x) = D.constructor "Left" [debug x]
+  debug (Right x) = D.constructor "Right" [ debug x ]
+  debug (Left x) = D.constructor "Left" [ debug x ]
 
 instance debugTuple :: (Debug a, Debug b) => Debug (Tuple a b) where
-  debug (Tuple x y) = D.constructor "Tuple" [debug x, debug y]
+  debug (Tuple x y) = D.constructor "Tuple" [ debug x, debug y ]
 
 instance debugMap :: (Debug k, Debug v) => Debug (Map k v) where
   debug m =
@@ -176,9 +178,12 @@ instance debugHashSet :: Debug a => Debug (HashSet a) where
 
 instance debugDate :: Debug Date where
   debug d = D.opaqueLiteral "Date"
-    (ljust0 4 (show (fromEnum (year d))) <> "-" <>
-     ljust0 2 (show (fromEnum (month d))) <> "-" <>
-     ljust0 2 (show (fromEnum (day d))))
+    ( ljust0 4 (show (fromEnum (year d))) <> "-"
+        <> ljust0 2 (show (fromEnum (month d)))
+        <> "-"
+        <>
+          ljust0 2 (show (fromEnum (day d)))
+    )
     where
     ljust0 n str =
       power "0" (n - String.length str) <> str

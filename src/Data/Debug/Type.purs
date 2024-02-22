@@ -37,6 +37,7 @@ module Data.Debug.Type
 
 import Prelude
 
+import Data.Ord (abs)
 import Data.Array as Array
 import Data.Debug.PrettyPrinter (Content, commaSeq, compact, emptyContent, indent, leaf, noParens, noWrap, parens, printContent, surround, verbatim, wrap)
 import Data.Foldable (foldMap, all, elem)
@@ -44,14 +45,12 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (unwrap)
 import Data.String as String
 import Data.Tuple (Tuple(..))
-import Math as Math
 
 -------------------------------------------------------------------------------
 -- BASIC DATA TYPES -----------------------------------------------------------
 
 -- | A strict rose tree type. Based on Data.Tree in Haskell's `containers`.
-data Tree a
-  = Node a (Array (Tree a))
+data Tree a = Node a (Array (Tree a))
 
 rootLabel :: forall a. Tree a -> a
 rootLabel (Node r _) = r
@@ -94,7 +93,7 @@ prune replacement counts depth = go (max 1 depth)
     Node replacement []
   go d (Node label children) =
     let
-      d' = if counts label then d-1 else d
+      d' = if counts label then d - 1 else d
     in
       Node label (map (go d') children)
 
@@ -230,7 +229,7 @@ makeProps = map unwrapProp
   where
   unwrapProp :: Tuple String Repr -> Tree Label
   unwrapProp (Tuple name (Repr val)) =
-    Node (Prop name) [val]
+    Node (Prop name) [ val ]
 
 -- | Create a `Repr` for a value constructed by a data constructor. For
 -- | example, the value `Just 3` may be represented by `constructor "Just" [int
@@ -245,7 +244,7 @@ constructor name args =
 -- | representation.
 opaque :: String -> Repr -> Repr
 opaque name child =
-  Repr (Node (Opaque name) [unRepr child])
+  Repr (Node (Opaque name) [ unRepr child ])
 
 -- | Like `opaque`, but without the second `Repr` argument; for when there is
 -- | no additional information to provide.
@@ -260,7 +259,7 @@ opaque_ name =
 -- | able to give detailed diffs.
 opaqueLiteral :: String -> String -> Repr
 opaqueLiteral name val =
-  Repr (Node (Opaque name) [Node (Literal val) []])
+  Repr (Node (Opaque name) [ Node (Literal val) [] ])
 
 -- | Create a `Repr` for a collection type. The first argument is the type
 -- | name, the second is the contents. Defined as `\name contents -> opaque
@@ -276,7 +275,7 @@ assoc name contents =
   Repr (Node (Assoc name) (map makeAssocProp contents))
   where
   makeAssocProp :: Tuple Repr Repr -> Tree Label
-  makeAssocProp (Tuple (Repr k) (Repr v)) = Node AssocProp [k, v]
+  makeAssocProp (Tuple (Repr k) (Repr v)) = Node AssocProp [ k, v ]
 
 -- | Should a label be considered as adding depth (from the perspective of
 -- | only pretty-printing to a certain depth)?
@@ -288,7 +287,7 @@ addsDepth =
     _ -> true
 
 relativeError :: Number -> Number -> Number
-relativeError x y = Math.abs (x - y) / max (Math.abs x) (Math.abs y)
+relativeError x y = abs (x - y) / max (abs x) (abs y)
 
 eqRelative :: Number -> Number -> Number -> Boolean
 eqRelative error x y = relativeError x y <= error
@@ -361,27 +360,26 @@ defaultDiffOptions :: DiffOptions
 defaultDiffOptions =
   { maxRelativeError: 1e-12 }
 
-diff' :: forall a.
-  (a -> a -> Boolean) ->
-  (a -> Boolean) ->
-  Tree a ->
-  Tree a ->
-  Tree (Delta a)
+diff'
+  :: forall a
+   . (a -> a -> Boolean)
+  -> (a -> Boolean)
+  -> Tree a
+  -> Tree a
+  -> Tree (Delta a)
 diff' labelEq isUnimportantLabel = go
   where
   go left@(Node x xs) right@(Node y ys) =
-    if labelEq x y
-      then
-        let
-          children = goChildren xs ys
-        in
-          if isUnimportantLabel x && all differing children
-            then
-              Node Different [map Subtree left, map Subtree right]
-            else
-              Node (Same x) children
-      else
-        Node Different [map Subtree left, map Subtree right]
+    if labelEq x y then
+      let
+        children = goChildren xs ys
+      in
+        if isUnimportantLabel x && all differing children then
+          Node Different [ map Subtree left, map Subtree right ]
+        else
+          Node (Same x) children
+    else
+      Node Different [ map Subtree left, map Subtree right ]
 
   goChildren :: Array (Tree a) -> Array (Tree a) -> Array (Tree (Delta a))
   goChildren xs ys =
@@ -399,7 +397,7 @@ diff' labelEq isUnimportantLabel = go
           begin <> map (extra Extra2) (Array.drop ylen xs)
 
   extra :: Delta a -> Tree a -> Tree (Delta a)
-  extra ctor subtree = Node ctor [map Subtree subtree]
+  extra ctor subtree = Node ctor [ map Subtree subtree ]
 
   differing :: Tree (Delta a) -> Boolean
   differing (Node root _) =
@@ -458,10 +456,10 @@ addsDepthDelta f =
 -- | - **compactThreshold:** Controls how large a subtree is allowed to become
 -- |   before it is broken over multiple lines. The larger this value is, the
 -- |   fewer lines will be needed to pretty-print something.
-type PrettyPrintOptions
-  = { maxDepth :: Maybe Int
-    , compactThreshold :: Int
-    }
+type PrettyPrintOptions =
+  { maxDepth :: Maybe Int
+  , compactThreshold :: Int
+  }
 
 defaultPrettyPrintOptions :: PrettyPrintOptions
 defaultPrettyPrintOptions =
@@ -478,9 +476,9 @@ defaultPrettyPrintOptions =
 prettyPrintWith :: PrettyPrintOptions -> Repr -> String
 prettyPrintWith opts =
   printContent
-  <<< foldTree (withResizing labelSize opts.compactThreshold prettyPrintGo)
-  <<< pruneTo opts.maxDepth
-  <<< unRepr
+    <<< foldTree (withResizing labelSize opts.compactThreshold prettyPrintGo)
+    <<< pruneTo opts.maxDepth
+    <<< unRepr
 
   where
   pruneTo = maybe identity (prune Omitted addsDepth)
@@ -499,11 +497,13 @@ prettyPrint = prettyPrintWith defaultPrettyPrintOptions
 prettyPrintDeltaWith :: PrettyPrintOptions -> ReprDelta -> String
 prettyPrintDeltaWith opts =
   printContent
-  <<< foldTree (withResizing (deltaSize labelSize)
-                             opts.compactThreshold
-                             prettyPrintGoDelta)
-  <<< pruneTo opts.maxDepth
-  <<< unReprDelta
+    <<< foldTree
+      ( withResizing (deltaSize labelSize)
+          opts.compactThreshold
+          prettyPrintGoDelta
+      )
+    <<< pruneTo opts.maxDepth
+    <<< unReprDelta
 
   where
   pruneTo = maybe identity (prune (Same Omitted) (addsDepthDelta addsDepth))
@@ -517,15 +517,15 @@ measure :: forall a. (a -> Int) -> a -> Array Content -> Int
 measure size root children =
   size root + unwrap (foldMap _.size children)
 
-withResizing :: forall a.
-  (a -> Int) ->
-  Int ->
-  (a -> Array Content -> Content) ->
-  (a -> Array Content -> Content)
+withResizing
+  :: forall a
+   . (a -> Int)
+  -> Int
+  -> (a -> Array Content -> Content)
+  -> (a -> Array Content -> Content)
 withResizing size threshold f root children =
-  if measure size root children <= threshold
-    then compact (f root children)
-    else f root children
+  if measure size root children <= threshold then compact (f root children)
+  else f root children
 
 prettyPrintGo :: Label -> Array Content -> Content
 prettyPrintGo root children =
@@ -553,33 +553,34 @@ prettyPrintGo root children =
     Record ->
       commaSeq "{ " " }" children
     Opaque name ->
-      if Array.null children
-        then
-          noParens $ surround "<" ">" $ verbatim name
-        else
-          noParens $
-            surround "<" ">" $
-              verbatim (name <> ":")
+      if Array.null children then
+        noParens $ surround "<" ">" $ verbatim name
+      else
+        noParens
+          $ surround "<" ">"
+          $
+            verbatim (name <> ":")
               <> indent "  " (noWrap (commaSeq "" "" children))
     Literal str ->
       noParens $ verbatim str
     Assoc name ->
-      noParens $
-        surround "<" ">" $
+      noParens
+        $ surround "<" ">"
+        $
           verbatim (name <> ":") <> noWrap (commaSeq "{ " " }" children)
     AssocProp ->
       case children of
-        [key, val] ->
+        [ key, val ] ->
           noParens $ (surround "" ":" (noWrap key) <> noWrap val)
         _ ->
           -- should not happen
           emptyContent
     Prop name ->
       case children of
-        [val] ->
+        [ val ] ->
           noParens $
             verbatim (prettyPrintLabel name <> ":")
-            <> indent "  " (noWrap val)
+              <> indent "  " (noWrap val)
         _ ->
           -- should not happen
           emptyContent
@@ -588,9 +589,8 @@ prettyPrintGo root children =
 
 prettyPrintLabel :: String -> String
 prettyPrintLabel name =
-  if isUnquotedKey name
-    then name
-    else show name
+  if isUnquotedKey name then name
+  else show name
 
 prettyPrintGoDelta :: Delta Label -> Array Content -> Content
 prettyPrintGoDelta root children =
@@ -599,7 +599,7 @@ prettyPrintGoDelta root children =
       prettyPrintGo a children
     Different ->
       case children of
-        [left, right] ->
+        [ left, right ] ->
           noParens $
             noWrap (markRemoved left) <> noWrap (markAdded right)
         _ ->
@@ -607,14 +607,14 @@ prettyPrintGoDelta root children =
           emptyContent
     Extra1 ->
       case children of
-        [x] ->
+        [ x ] ->
           markRemoved x
         _ ->
           -- should not happen
           emptyContent
     Extra2 ->
       case children of
-        [x] ->
+        [ x ] ->
           markAdded x
         _ ->
           -- should not happen
@@ -693,7 +693,7 @@ isUnquotedKey key =
       false
     Just { head, tail } ->
       isUnquotedKeyHead head
-      && all isUnquotedKeyTail (String.toCodePointArray tail)
+        && all isUnquotedKeyTail (String.toCodePointArray tail)
 
 -- | Note that this is more restrictive than necessary, since we consider
 -- | record labels beginning with a lowercase non-ascii character to require
@@ -715,7 +715,7 @@ isNumericAscii = between "0" "9"
 -- | in fact this is not necessarily true.
 isUnquotedKeyTail :: String.CodePoint -> Boolean
 isUnquotedKeyTail =
-  (_ `elem` (map String.codePointFromChar ['_', '\'']))
+  (_ `elem` (map String.codePointFromChar [ '_', '\'' ]))
     || (isAlphaNumAscii <<< String.singleton)
 
 isAlphaNumAscii :: String -> Boolean
