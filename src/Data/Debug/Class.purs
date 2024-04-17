@@ -1,4 +1,4 @@
--- | This module provides the `Debug` type class, for converting values into
+        -- | This module provides the `Debug` type class, for converting values into
 -- | their `Debug` representations.
 module Data.Debug.Class
   ( class Debug
@@ -41,6 +41,7 @@ import Prim.Row as Row
 import Prim.RowList (class RowToList, Cons, Nil, RowList)
 import Record (get, delete)
 import Type.Proxy (Proxy(..))
+import Data.Array.NonEmpty as NEA
 
 -- | Ideally, all types of kind `Type` should have an instance of this class.
 -- | If you are defining a type where it's difficult/impossible to do anything
@@ -161,6 +162,11 @@ instance debugHashMap :: (Debug k, Debug v) => Debug (HashMap k v) where
   debug m =
     D.assoc "HashMap"
       (map (bimap debug debug) (HashMap.toArrayBy Tuple m))
+
+instance (Debug v) => Debug (NEA.NonEmptyArray v) where
+  debug m =
+    D.collection "NonEmptyArray"
+      (map debug (NEA.toArray m))
 
 instance debugEffect :: Debug (Effect a) where
   debug _ = D.opaque_ "Effect"
